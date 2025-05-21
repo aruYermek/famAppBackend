@@ -2,6 +2,7 @@ const express = require('express');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const cors = require('cors');
+const logger = require('./logger');
 
 // Load environment variables
 dotenv.config();
@@ -11,6 +12,16 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors());
+
+app.use((req, res, next) => {
+  logger.debug('Incoming Request:', {
+    method: req.method,
+    url: req.url,
+    body: req.body,
+    headers: req.headers,
+  });
+  next();
+});
 
 // Route Imports
 app.use('/auth', require('./routes/authRoutes')); // Authentication routes

@@ -9,6 +9,7 @@ const {
   verifyResetCode,
   resetPassword,
   registerAdmin,
+  googleLogin
 } = require('../controllers/authController');
 
 
@@ -23,6 +24,7 @@ router.post('/create-password', createPassword);
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-reset-code', verifyResetCode);
 router.post('/reset-password', resetPassword);
+router.post('/google', googleLogin);
 
 
 module.exports = router;

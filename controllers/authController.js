@@ -3,8 +3,10 @@ const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const logger = require('../logger')
 const { OAuth2Client } = require('google-auth-library');
 
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // from Firebase console
 
 exports.registerAdmin = async (req, res) => {
   try {
@@ -152,7 +154,54 @@ exports.login = async (req, res) => {
   }
 };
 
- 
+exports.googleLogin = async (req, res) => {
+  const { token } = req.body;
+
+  // Log the incoming payload
+  logger.info('Received Google Auth Payload:', { payload: req.body });
+
+  // Log the GOOGLE_CLIENT_ID
+  logger.info('GOOGLE_CLIENT_ID:', { clientId: process.env.GOOGLE_CLIENT_ID });
+
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    // Log the decoded token payload
+    logger.info('Google User Payload:', { userPayload: payload });
+
+    const { email, sub: googleId, name, picture } = payload;
+
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+      user = new User({
+        email,
+        googleId,
+        name,
+        profileImage: picture,
+        role: 'user',
+      });
+      await user.save();
+      logger.info('New user created:', { userId: user._id, email });
+    }
+
+    const authToken = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+      expiresIn: '7d',
+    });
+
+    logger.info('JWT generated for user:', { userId: user._id, role: user.role });
+
+    res.json({ token: authToken, user });
+  } catch (error) {
+    // Log the error with detailed information
+    logger.error('Google Auth Error:', { message: error.message, stack: error.stack, token });
+    res.status(401).json({ message: 'Invalid Google token', error: error.message });
+  }
+};
   
 exports.verifyEmail = async (req, res) => {
     try {
