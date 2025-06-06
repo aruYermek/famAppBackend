@@ -75,42 +75,36 @@ exports.getStageQuestions = async (req, res) => {
 exports.submitStageTest = async (req, res) => {
   try {
     const { stageId, answers } = req.body;
-    console.log('Submit stage test - Request body:', { stageId, answers, user: req.user });
-
+    const userId = req.user._id;
     if (!stageId || !answers || !Array.isArray(answers)) {
-      console.error('Invalid request data:', { stageId, answers });
       return res.status(400).json({ message: 'Invalid request: stageId and answers are required' });
     }
-
-    console.log('📡 req.user before userId extraction:', req.user);
-    const userId = req.user._id;
     if (!userId) {
-      console.error('No user ID found in token', { reqUser: req.user });
       return res.status(401).json({ message: 'Unauthorized: No user ID' });
     }
 
     const results = answers.reduce((acc, answer) => {
-      const subtestId = answer.subtestId; // Используем строку
+      const subtestId = answer.subtestId;
       if (!acc[subtestId]) {
-        acc[subtestId] = {
-          subtestId,
-          scores: [],
-        };
+        acc[subtestId] = { subtestId, scores: [] };
       }
       acc[subtestId].scores.push(answer.answer || 0);
       return acc;
     }, {});
 
     const subtestIds = Object.keys(results);
-    console.log('Fetching subtests for IDs:', subtestIds);
-    const subtests = await Subtest.find({ _id: { $in: subtestIds } }); // Поиск по строкам
-    console.log('Fetched subtests:', subtests);
-
+    const subtests = await Subtest.find({ _id: { $in: subtestIds } });
     if (!subtests || subtests.length === 0) {
-      console.error('No subtests found for IDs:', subtestIds);
       return res.status(404).json({ message: 'No subtests found for provided IDs' });
     }
 
+    // Получаем информацию об этапе
+    const stage = await Stage.findById(stageId);
+    if (!stage) {
+      return res.status(404).json({ message: `Stage with ID ${stageId} not found` });
+    }
+
+    const progressEntries = [];
     const formattedResults = await Promise.all(
       Object.values(results).map(async (subtest) => {
         const subtestData = subtests.find((s) => s._id.toString() === subtest.subtestId) || {};
@@ -123,21 +117,35 @@ exports.submitStageTest = async (req, res) => {
             const question = subtestData.questions?.[index] || {};
             const scaledScore = score * 20 || 0;
             const subcategory = question.subcategory || subtestData.title || subtest.subtestId;
-
             const commentDoc = await Comment.findOne({
               subcategory,
               minScore: { $lte: scaledScore },
               maxScore: { $gte: scaledScore },
             });
-            const comment = commentDoc ? commentDoc.comment : 'No comment available';
-
             return {
               subcategory,
               score: scaledScore,
-              comment,
+              comment: commentDoc ? commentDoc.comment : 'No comment available',
             };
           })
         );
+
+        await UserProgress.deleteMany({ userId, subtestId: subtest.subtestId });
+        progressEntries.push({
+          userId,
+          subtestId: subtest.subtestId,
+          stageId, // Добавляем stageId
+          stageTitle: stage.title || 'Unknown Stage', // Добавляем stageTitle
+          testName: subtestData.title || subtest.subtestId,
+          score: overallScore,
+          subcategories,
+          answers: subtest.scores.reduce((acc, score, idx) => {
+            const question = subtestData.questions?.[idx];
+            return question ? { ...acc, [question._id]: score } : acc;
+          }, {}),
+          completedAt: new Date(),
+          eligibleForRetakeAt: new Date(Date.now() + (subtestData.cooldownDays || 1) * 24 * 60 * 60 * 1000),
+        });
 
         return {
           subtestId: subtest.subtestId,
@@ -148,7 +156,9 @@ exports.submitStageTest = async (req, res) => {
       })
     );
 
-    console.log('Formatted results:', formattedResults);
+    if (progressEntries.length > 0) {
+      await UserProgress.insertMany(progressEntries);
+    }
 
     const testResult = new TestResult({
       userId,
@@ -157,15 +167,10 @@ exports.submitStageTest = async (req, res) => {
       submittedAt: new Date(),
     });
     await testResult.save();
-    console.log('Test result saved:', testResult);
 
     res.json({ message: 'Stage test submitted successfully', results: formattedResults });
   } catch (error) {
-    console.error('Error submitting test:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-    });
+    console.error('Error submitting test:', { message: error.message, stack: error.stack });
     res.status(500).json({ message: 'Server error', details: error.message });
   }
 };

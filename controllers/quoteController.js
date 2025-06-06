@@ -1,17 +1,28 @@
-const Quote = require('../models/Quote');
+const axios = require('axios');
+const DailyQuote = require('../models/Quote');
 
 exports.getQuoteOfTheDay = async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0]; // Текущая дата (например, 2025-05-21)
-    let quote = await Quote.findOne({ date: today });
+    const today = new Date().toISOString().slice(0, 10);
 
-    if (!quote) {
-      const allQuotes = await Quote.find();
-      quote = allQuotes[Math.floor(Math.random() * allQuotes.length)];
+    let dailyQuote = await DailyQuote.findOne({ date: today });
+
+    if (!dailyQuote) {
+      const response = await axios.get('https://zenquotes.io/api/today');
+      const quoteData = response.data[0]; // [{ q: "text", a: "author" }]
+
+      dailyQuote = new DailyQuote({
+        date: today,
+        text: quoteData.q,
+        author: quoteData.a || 'Unknown',
+      });
+
+      await dailyQuote.save();
     }
 
-    res.json(quote);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.json({ text: dailyQuote.text, author: dailyQuote.author });
+  } catch (error) {
+    console.error('Failed to fetch or save daily quote:', error.message);
+    res.status(500).json({ message: 'Failed to get quote of the day' });
   }
 };

@@ -1,6 +1,9 @@
+const mongoose = require('mongoose');
 const Insight = require('../models/Insight');
 const User = require('../models/User');
 const UserProgress = require('../models/UserProgress');
+
+
 
 exports.getFeaturedInsights = async (req, res) => {
   try {
@@ -23,7 +26,6 @@ exports.getAllInsights = async (req, res) => {
 exports.getInsightById = async (req, res) => {
   try {
     const { id } = req.params;
-    // Проверяем, является ли id валидным ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid insight ID' });
     }
@@ -33,9 +35,11 @@ exports.getInsightById = async (req, res) => {
     }
     res.json(insight);
   } catch (err) {
+    console.error('Error in getInsightById:', err); // Добавь вывод ошибки
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
 // ✅ Get all insights for a specific category
 exports.getInsightsByCategory = async (req, res) => {
   try {

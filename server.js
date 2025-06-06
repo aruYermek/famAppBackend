@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const cors = require('cors');
 const logger = require('./logger');
+const { validateGoogleToken } = require('./controllers/googleAuthController');
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +34,10 @@ app.use('/api/insights', require('./routes/insightRoutes')); // Insights
 app.use('/api', require('./routes/progressRoutes')); // Progress
 app.use('/api', require('./routes/questionnaireRoutes')); // Questionnaire
 app.use('/api/admin', require('./routes/adminRoutes')); // Admin routes
+app.post('/auth/google/validate', validateGoogleToken);
+app.use('/api/stages', require('./routes/stageRoutes'));
+app.use('/api/external', require('./routes/externalRoutes'));
+
 
 const startServer = async () => {
   try {

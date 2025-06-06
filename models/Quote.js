@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
 
-const QuoteSchema = new mongoose.Schema({
+const DailyQuoteSchema = new mongoose.Schema({
+  date: { type: String, required: true, unique: true }, // формат YYYY-MM-DD
   text: { type: String, required: true },
-  date: { type: Date, default: Date.now }, 
+  author: { type: String },
 });
 
-module.exports = mongoose.model('Quote', QuoteSchema);
+module.exports = mongoose.model('DailyQuote', DailyQuoteSchema);

@@ -7,8 +7,8 @@ const Subtest = require('../models/Subtest');
 // backend/controllers/resultsController.js
 exports.saveTestResult = async (req, res) => {
   try {
-    const { userId, testId, answers } = req.body; // Убрали score, так как он вычисляется
-    console.log('📡 Received POST /api/results with body:', req.body);
+    const { userId, testId, answers } = req.body;
+    console.log('📡 Received POST /api/results with body:', { userId, testId, answers });
 
     if (!userId || !testId || !answers || !Array.isArray(answers)) {
       console.log('❌ Missing or invalid required fields:', { userId, testId, answers });
@@ -23,43 +23,70 @@ exports.saveTestResult = async (req, res) => {
 
     const progressEntries = [];
     for (const subtest of subtests) {
-      const subtestAnswers = answers.filter(a => a.subtestId === subtest._id.toString());
+      const subtestAnswers = answers.filter((a) => a.subtestId === subtest._id.toString());
       if (subtestAnswers.length === 0) continue;
+
+      // Удаляем старые результаты для этого подтеста
+      await UserProgress.deleteMany({
+        userId,
+        subtestId: subtest._id.toString(),
+      });
+      console.log('📡 Deleted old UserProgress for subtest:', subtest._id);
 
       const subcategoryScores = await Promise.all(
         subtest.subcategories.map(async (subcategory) => {
-          const subcategoryQuestions = subtest.questions.filter(q => q.subcategory === subcategory);
-          const questionIds = subcategoryQuestions.map(q => q._id.toString());
-          const relevantAnswers = subtestAnswers.filter(a => questionIds.includes(a.questionId));
-          const totalScore = relevantAnswers.reduce((sum, a) => sum + a.answer, 0);
+          const subcategoryQuestions = subtest.questions.filter((q) => q.subcategory === subcategory);
+          const questionIds = subcategoryQuestions.map((q) => q._id.toString());
+          const relevantAnswers = subtestAnswers.filter((a) => questionIds.includes(a.questionId));
+          if (relevantAnswers.length === 0) {
+            return {
+              subcategory,
+              score: 0,
+              comment: 'No answers provided for this subcategory',
+            };
+          }
+
+          const totalScore = relevantAnswers.reduce((sum, a) => sum + (a.answer || 0), 0);
           const averageScore = totalScore / relevantAnswers.length;
           const percentageScore = ((averageScore - 1) / 4) * 100;
 
           const commentDoc = await Comment.findOne({
-            subtestId: subtest._id,
+            subtestId: subtest._id.toString(),
             minScore: { $lte: percentageScore },
             maxScore: { $gte: percentageScore },
           });
 
           return {
             subcategory,
-            score: percentageScore,
+            score: Math.round(percentageScore),
             comment: commentDoc ? commentDoc.comment : 'No comment available',
           };
         })
       );
 
-      const overallScore = subcategoryScores.reduce((sum, cat) => sum + cat.score, 0) / subcategoryScores.length;
+      const validSubcategoryScores = subcategoryScores.filter((cat) => cat.score > 0);
+      const overallScore =
+        validSubcategoryScores.length > 0
+          ? validSubcategoryScores.reduce((sum, cat) => sum + cat.score, 0) /
+            validSubcategoryScores.length
+          : 0;
+
+      if (overallScore === 0) {
+        console.log('📡 Skipping subtest with zero score:', subtest.title);
+        continue;
+      }
 
       progressEntries.push({
         userId,
-        subtestId: subtest._id,
+        subtestId: subtest._id.toString(),
         testName: subtest.title,
         score: Math.round(overallScore),
         subcategories: subcategoryScores,
         answers: subtestAnswers.reduce((acc, a) => ({ ...acc, [a.questionId]: a.answer }), {}),
         completedAt: new Date(),
-        eligibleForRetakeAt: new Date(Date.now() + (subtest.cooldownDays || 90) * 24 * 60 * 60 * 1000),
+        eligibleForRetakeAt: new Date(
+          Date.now() + (subtest.cooldownDays || 1) * 24 * 60 * 60 * 1000
+        ),
       });
     }
 

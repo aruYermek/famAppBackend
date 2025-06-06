@@ -12,15 +12,14 @@ exports.getUserProfile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const savedTests = await UserProgress.find({ userId: req.user._id }).populate('subtestId');
+   
     const savedInsights = await UserProgress.find({ userId: req.user._id }).populate('insightsViewed');
 
     const profileData = {
       firstName: user.name.split(' ')[0] || '',
       lastName: user.name.split(' ')[1] || '',
       email: user.email,
-      savedTests: savedTests.map(test => test.subtestId?.title || 'Unknown Test'),
-      savedInsights: savedInsights.map(insight => insight.insightsViewed?.title || 'Unknown Insight'),
+       savedInsights: user.savedArticles.map(article => ({ _id: article._id, title: article.title })),
     };
 
     console.log('profileController - getUserProfile - Profile data:', profileData);
