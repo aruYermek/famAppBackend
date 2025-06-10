@@ -77,23 +77,16 @@ exports.addQuestion = async (req, res) => {
   try {
     const { subtestId, question, subcategory } = req.body;
 
-    // Validate required fields
     if (!subtestId || !question || !subcategory) {
       return res.status(400).json({ message: 'subtestId, question, and subcategory are required' });
     }
-
-    // Check if subtest exists
     const subtest = await Subtest.findById(subtestId);
     if (!subtest) {
       return res.status(404).json({ message: 'Subtest not found' });
     }
-
-    // Check if subcategory is valid
     if (!subtest.subcategories.includes(subcategory)) {
       return res.status(400).json({ message: 'Subcategory not found in subtest' });
     }
-
-    // Add question (options are set by schema default)
     subtest.questions.push({
       question,
       subcategory,

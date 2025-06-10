@@ -43,7 +43,6 @@ exports.getStageQuestions = async (req, res) => {
       return res.status(404).json({ message: 'No subtests found for this stage' });
     }
 
-    // Collect all questions with subtest metadata
     let allQuestions = [];
     subtests.forEach(subtest => {
       subtest.questions.forEach(question => {
@@ -58,7 +57,6 @@ exports.getStageQuestions = async (req, res) => {
       });
     });
 
-    // Shuffle questions using Fisher-Yates algorithm for better randomization
     for (let i = allQuestions.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [allQuestions[i], allQuestions[j]] = [allQuestions[j], allQuestions[i]];
@@ -71,7 +69,7 @@ exports.getStageQuestions = async (req, res) => {
   }
 };
 
-// Submit answers for all subtests in a stage
+
 exports.submitStageTest = async (req, res) => {
   try {
     const { stageId, answers } = req.body;
@@ -98,7 +96,7 @@ exports.submitStageTest = async (req, res) => {
       return res.status(404).json({ message: 'No subtests found for provided IDs' });
     }
 
-    // Получаем информацию об этапе
+
     const stage = await Stage.findById(stageId);
     if (!stage) {
       return res.status(404).json({ message: `Stage with ID ${stageId} not found` });
@@ -134,8 +132,8 @@ exports.submitStageTest = async (req, res) => {
         progressEntries.push({
           userId,
           subtestId: subtest.subtestId,
-          stageId, // Добавляем stageId
-          stageTitle: stage.title || 'Unknown Stage', // Добавляем stageTitle
+          stageId,
+          stageTitle: stage.title || 'Unknown Stage',
           testName: subtestData.title || subtest.subtestId,
           score: overallScore,
           subcategories,

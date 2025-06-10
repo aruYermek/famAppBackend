@@ -3,7 +3,6 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware"); 
 const User = require("../models/User"); 
 
-// Получение данных пользователя
 router.get("/user", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");

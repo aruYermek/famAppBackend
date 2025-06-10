@@ -5,4 +5,4 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 progressRouter.get('/progress', authMiddleware, getUserProgress);
 
-module.exports = progressRouter; // Export the router directly
+module.exports = progressRouter; 

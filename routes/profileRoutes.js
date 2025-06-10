@@ -3,7 +3,6 @@ const profileRouter = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const { getUserProfile, updateUserProfile, logout } = require('../controllers/profileController');
 
-// Log when profile routes are hit
 profileRouter.get('/profile', authMiddleware, (req, res, next) => {
   console.log('profileRoutes - Handling GET /api/profile for user:', req.user.id);
   next();

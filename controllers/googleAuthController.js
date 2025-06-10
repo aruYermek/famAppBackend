@@ -24,7 +24,6 @@ async function validateGoogleToken(req, res) {
   }
 
   try {
-    // Exchange code for tokens
     const { tokens } = await googleClient.getToken(code);
     const { access_token, id_token } = tokens;
 

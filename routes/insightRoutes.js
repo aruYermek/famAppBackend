@@ -1,4 +1,3 @@
-// backend/routes/insightRoutes.js
 const express = require('express');
 const insightRouter = express.Router();
 const { markInsightAsViewed, getFeaturedInsights, getAllInsights, getInsightById, saveInsight, unsaveInsight, getSavedArticles } = require('../controllers/insightController');

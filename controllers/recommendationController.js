@@ -1,4 +1,3 @@
-// backend/controllers/recommendationController.js
 const Recommendation = require('../models/Recommendations');
 
 exports.getRecommendations = async (req, res) => {
@@ -12,8 +11,8 @@ exports.getRecommendations = async (req, res) => {
 
 exports.updateRecommendationStatus = async (req, res) => {
   try {
-    const { id } = req.params; // Берем ID из маршрута
-    const { status } = req.body; // Берем статус из тела запроса
+    const { id } = req.params; 
+    const { status } = req.body; 
     if (!status) {
       return res.status(400).json({ message: 'Status is required' });
     }
@@ -21,7 +20,7 @@ exports.updateRecommendationStatus = async (req, res) => {
     if (!recommendation) {
       return res.status(404).json({ message: 'Recommendation not found' });
     }
-    recommendation.status = status; // Обновляем статус
+    recommendation.status = status;
     await recommendation.save();
     res.json({ message: 'Status updated', recommendation });
   } catch (err) {

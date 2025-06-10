@@ -3,7 +3,7 @@ const User = require('../models/User');
 exports.submitStep1 = async (req, res) => {
   try {
     const { age, gender } = req.body;
-    const user = await User.findById(req.user._id); // Assumes req.user is set by auth middleware
+    const user = await User.findById(req.user._id); 
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     user.age = age;

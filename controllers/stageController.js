@@ -1,4 +1,3 @@
-// backend/controllers/stageController.js
 const Stage = require('../models/Stage');
 const Subtest = require('../models/Subtest');
 const UserProgress = require('../models/UserProgress');

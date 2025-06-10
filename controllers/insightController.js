@@ -14,7 +14,7 @@ exports.getFeaturedInsights = async (req, res) => {
   }
 };
 
-// Получить все артикли для страницы "Посмотреть все"
+// для страницы "Посмотреть все"
 exports.getAllInsights = async (req, res) => {
   try {
     const insights = await Insight.find().sort({ createdAt: -1 });
@@ -35,16 +35,16 @@ exports.getInsightById = async (req, res) => {
     }
     res.json(insight);
   } catch (err) {
-    console.error('Error in getInsightById:', err); // Добавь вывод ошибки
+    console.error('Error in getInsightById:', err); 
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
-// ✅ Get all insights for a specific category
+// Get all insights for a specific category
 exports.getInsightsByCategory = async (req, res) => {
   try {
-    const { category } = req.params;  // Get category from URL (e.g., "Emotions")
-    
+    const { category } = req.params;  
+
     const insights = await Insight.find({ category }).sort({ createdAt: -1 });
 
     if (!insights.length) {
@@ -57,27 +57,26 @@ exports.getInsightsByCategory = async (req, res) => {
   }
 };
 
-// ✅ Mark an insight as viewed by the user
+// Mark an insight as viewed by the user
 exports.markInsightAsViewed = async (req, res) => {
   try {
-    const { insightId } = req.params;  // Get insight ID from URL
-    const userId = req.user._id; // Get user ID from the authentication middleware
+    const { insightId } = req.params; 
+    const userId = req.user._id;
 
     const insight = await Insight.findById(insightId);
     if (!insight) {
       return res.status(404).json({ message: 'Insight not found' });
     }
 
-    // Check if the user has already viewed the insight
+
     if (insight.viewedBy.includes(userId)) {
       return res.status(400).json({ message: 'You have already viewed this insight' });
     }
 
-    // Add the user to the "viewedBy" array
+
     insight.viewedBy.push(userId);
     await insight.save();
 
-    // Find or create a UserProgress entry for this user
     let progress = await UserProgress.findOne({ userId });
     if (!progress) {
       progress = new UserProgress({
@@ -90,7 +89,6 @@ exports.markInsightAsViewed = async (req, res) => {
       });
     }
 
-    // Add the insight to the user's progress
     if (!progress.insightsViewed.includes(insightId)) {
       progress.insightsViewed.push(insightId);
       await progress.save();
@@ -105,7 +103,7 @@ exports.markInsightAsViewed = async (req, res) => {
 exports.saveInsight = async (req, res) => {
   try {
     const { insightId } = req.params;
-    const userId = req.user._id; // Из middleware auth
+    const userId = req.user._id; 
 
     const insight = await Insight.findById(insightId);
     if (!insight) {
@@ -145,8 +143,8 @@ exports.unsaveInsight = async (req, res) => {
 
 exports.getSavedArticles = async (req, res) => {
   try {
-    const userId = req.user._id; // Получаем ID пользователя из middleware auth
-    const user = await User.findById(userId).populate('savedArticles'); // Популируем данные артиклей
+    const userId = req.user._id; 
+    const user = await User.findById(userId).populate('savedArticles'); 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }

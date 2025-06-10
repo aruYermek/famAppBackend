@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const logger = require('../logger')
 const { OAuth2Client } = require('google-auth-library');
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // from Firebase console
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 exports.registerAdmin = async (req, res) => {
   try {
@@ -45,7 +45,7 @@ exports.registerAdmin = async (req, res) => {
       email,
       password: hashedPassword,
       role: 'admin',
-      emailVerified: true, // Admin doesn't need email verification
+      emailVerified: true,
     });
 
     await user.save();
@@ -66,7 +66,7 @@ exports.register = async (req, res) => {
 
     const { name, phone, email } = req.body;
 
-    
+
     if (!name || name.trim().length < 1) {
       console.log('❌ Error: Name too short');
       return res.status(400).json({ message: 'Name must have at least 1 character' });
@@ -85,7 +85,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: 'Phone number is already registered' });
     }
 
-  
+
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
       console.log('❌ Error: Invalid email');
@@ -135,14 +135,14 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'No password set. Please reset your password' });
     }
 
-   
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       console.log('❌ Incorrect password');
       return res.status(400).json({ message: 'Incorrect password' });
     }
 
-   
+
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     console.log('✅ Login successful, token generated');
@@ -157,10 +157,8 @@ exports.login = async (req, res) => {
 exports.googleLogin = async (req, res) => {
   const { token } = req.body;
 
-  // Log the incoming payload
   logger.info('Received Google Auth Payload:', { payload: req.body });
 
-  // Log the GOOGLE_CLIENT_ID
   logger.info('GOOGLE_CLIENT_ID:', { clientId: process.env.GOOGLE_CLIENT_ID });
 
   try {
@@ -170,7 +168,6 @@ exports.googleLogin = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-    // Log the decoded token payload
     logger.info('Google User Payload:', { userPayload: payload });
 
     const { email, sub: googleId, name, picture } = payload;
@@ -197,56 +194,55 @@ exports.googleLogin = async (req, res) => {
 
     res.json({ token: authToken, user });
   } catch (error) {
-    // Log the error with detailed information
     logger.error('Google Auth Error:', { message: error.message, stack: error.stack, token });
     res.status(401).json({ message: 'Invalid Google token', error: error.message });
   }
 };
-  
+
 exports.verifyEmail = async (req, res) => {
-    try {
-      const { email, code } = req.body;
-      const user = await User.findOne({ email });
-  
-      if (!user) {
-        return res.status(400).json({ message: 'Пользователь не найден' });
-      }
-  
-      if (user.verificationCode !== code || user.verificationCodeExpires < Date.now()) {
-        return res.status(400).json({ message: 'Неверный или истекший код' });
-      }
-  
-      user.emailVerified = true;
-      user.verificationCode = undefined;
-      user.verificationCodeExpires = undefined;
-      await user.save();
-  
-      res.json({ message: 'Email подтвержден' });
-    } catch (error) {
-      res.status(500).json({ error: 'Ошибка сервера' });
+  try {
+    const { email, code } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Пользователь не найден' });
     }
-  };
+
+    if (user.verificationCode !== code || user.verificationCodeExpires < Date.now()) {
+      return res.status(400).json({ message: 'Неверный или истекший код' });
+    }
+
+    user.emailVerified = true;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    await user.save();
+
+    res.json({ message: 'Email подтвержден' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+};
 exports.resendCode = async (req, res) => {
-    try {
-      const { email } = req.body;
-      const user = await User.findOne({ email });
-  
-      if (!user) {
-        return res.status(400).json({ message: 'Пользователь не найден' });
-      }
-  
-      const newCode = crypto.randomInt(100000, 999999).toString();
-      user.verificationCode = newCode;
-      user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
-  
-      await user.save();
-      await sendEmail(email, 'Email Verification Code', `Your new code: ${newCode}`);
-  
-      res.json({ message: 'Новый код отправлен' });
-    } catch (error) {
-      res.status(500).json({ error: 'Ошибка сервера' });
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Пользователь не найден' });
     }
-  };
+
+    const newCode = crypto.randomInt(100000, 999999).toString();
+    user.verificationCode = newCode;
+    user.verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    await user.save();
+    await sendEmail(email, 'Email Verification Code', `Your new code: ${newCode}`);
+
+    res.json({ message: 'Новый код отправлен' });
+  } catch (error) {
+    res.status(500).json({ error: 'Ошибка сервера' });
+  }
+};
 
 exports.createPassword = async (req, res) => {
   try {
@@ -274,7 +270,6 @@ exports.createPassword = async (req, res) => {
       });
     }
 
-    // Явное хеширование пароля
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
 
@@ -289,17 +284,17 @@ exports.createPassword = async (req, res) => {
   }
 };
 
-  
-  
 
-  // Verify email with the verification code
+
+
+// Verify email with the verification code
 exports.verifyCode = async (req, res) => {
   try {
     console.log('🔵 Incoming request:', req.body);
 
     const { email, verificationCode } = req.body;
 
-    
+
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -309,7 +304,7 @@ exports.verifyCode = async (req, res) => {
 
     console.log('✅ User found:', user);
 
-    
+
     if (new Date() > new Date(user.verificationCodeExpires)) {
       console.log('⚠️ Code expired');
       return res.status(400).json({ message: 'Verification code expired' });
@@ -317,7 +312,7 @@ exports.verifyCode = async (req, res) => {
 
     console.log(`📌 Received code: "${verificationCode}", Code in DB: "${user.verificationCode}"`);
 
-    
+
     if (String(verificationCode).trim() !== String(user.verificationCode).trim()) {
       console.log('❌ Error: Incorrect verification code');
       return res.status(400).json({ message: 'Incorrect verification code' });
@@ -325,10 +320,10 @@ exports.verifyCode = async (req, res) => {
 
     console.log('✅ Verification successful, updating emailVerified');
 
-    
+
     user.emailVerified = true;
-    user.verificationCode = null; 
-    user.verificationCodeExpires = null; 
+    user.verificationCode = null;
+    user.verificationCodeExpires = null;
     await user.save();
 
     return res.status(200).json({ message: 'Email verified successfully' });
@@ -352,15 +347,15 @@ exports.forgotPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-   
+
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000); // Код действует 10 минут
+    const verificationCodeExpires = new Date(Date.now() + 10 * 60 * 1000);
 
     user.verificationCode = verificationCode;
     user.verificationCodeExpires = verificationCodeExpires;
     await user.save();
 
-   
+
     await sendEmail(email, 'Password Reset Code', `Your verification code is: ${verificationCode}`);
 
     console.log('✅ Password reset code sent:', verificationCode);
@@ -417,7 +412,7 @@ exports.resetPassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    
+
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
     if (!passwordRegex.test(password)) {
       console.log('❌ Error: Weak password');
@@ -426,11 +421,11 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    
+
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
 
-    
+
     user.verificationCode = null;
     user.verificationCodeExpires = null;
     await user.save();

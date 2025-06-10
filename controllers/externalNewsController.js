@@ -5,7 +5,6 @@ const NEWS_API_KEY = process.env.NEWS_API_KEY;
 const TOPICS = {
   family: 'family relationships OR family values OR parenting OR marriage',
   selfReflection: 'self analysis OR self reflection OR personal growth OR mindfulness',
-  // можно добавить другие темы
 };
 
 exports.getNewsByTopic = async (req, res) => {

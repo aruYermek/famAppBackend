@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const DailyQuoteSchema = new mongoose.Schema({
-  date: { type: String, required: true, unique: true }, // формат YYYY-MM-DD
+  date: { type: String, required: true, unique: true }, 
   text: { type: String, required: true },
   author: { type: String },
 });

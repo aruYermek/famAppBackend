@@ -9,7 +9,7 @@ exports.getQuoteOfTheDay = async (req, res) => {
 
     if (!dailyQuote) {
       const response = await axios.get('https://zenquotes.io/api/today');
-      const quoteData = response.data[0]; // [{ q: "text", a: "author" }]
+      const quoteData = response.data[0];
 
       dailyQuote = new DailyQuote({
         date: today,

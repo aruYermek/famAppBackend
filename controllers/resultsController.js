@@ -4,7 +4,6 @@ const Subtest = require('../models/Subtest');
 
 
 // Save test results
-// backend/controllers/resultsController.js
 exports.saveTestResult = async (req, res) => {
   try {
     const { userId, testId, answers } = req.body;
@@ -25,8 +24,6 @@ exports.saveTestResult = async (req, res) => {
     for (const subtest of subtests) {
       const subtestAnswers = answers.filter((a) => a.subtestId === subtest._id.toString());
       if (subtestAnswers.length === 0) continue;
-
-      // Удаляем старые результаты для этого подтеста
       await UserProgress.deleteMany({
         userId,
         subtestId: subtest._id.toString(),
@@ -129,7 +126,6 @@ exports.getOverallResults = async (req, res) => {
       return res.status(404).json({ message: 'No results found for this user' });
     }
 
-    // Group results by stages
     const stages = await Stage.find().sort({ order: 1 });
     const stageResults = await Promise.all(
       stages.map(async (stage) => {
@@ -165,14 +161,13 @@ exports.getOverallResults = async (req, res) => {
       })
     );
 
-    // Calculate overall score (average of stage scores)
+    // Calculate overall score
     const validStages = stageResults.filter(stage => stage.averageScore !== null);
     const overallScore =
       validStages.length > 0
         ? validStages.reduce((sum, stage) => sum + stage.averageScore, 0) / validStages.length
         : null;
 
-    // Generate descriptions based on score levels
     const descriptions = validStages.map(stage => {
       const subtests = stage.subtests.map(subtest => {
         let level, description;
@@ -212,7 +207,7 @@ exports.getOverallResults = async (req, res) => {
   }
 };
 
-// Helper function to get description based on subtest and level
+
 function getDescription(subtestId, level) {
   const descriptions = {
     'emotional-maturity': {

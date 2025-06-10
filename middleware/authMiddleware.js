@@ -12,7 +12,7 @@ module.exports = async (req, res, next) => {
     const tokenWithoutBearer = token.replace('Bearer ', '');
 
     const decoded = jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET);
-    console.log('📡 Decoded token:', decoded); // Debug log
+    console.log('📡 Decoded token:', decoded); 
 
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
@@ -20,7 +20,7 @@ module.exports = async (req, res, next) => {
     }
 
     req.user = { id: user._id.toString(), _id: user._id.toString() };
-    console.log('📡 Set req.user._id:', req.user._id); // Debug log
+    console.log('📡 Set req.user._id:', req.user._id); 
 
     next();
   } catch (error) {

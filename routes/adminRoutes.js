@@ -3,8 +3,6 @@ const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const adminController = require('../controllers/adminController');
 
-
-// Middleware to check if user is admin
 const isAdmin = (req, res, next) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Access denied: Admins only' });
@@ -12,7 +10,7 @@ const isAdmin = (req, res, next) => {
   next();
 };
 
-// Admin routes (all protected by authMiddleware and isAdmin)
+
 router.post('/stages', authMiddleware, isAdmin, adminController.createStage);
 router.post('/subtests', authMiddleware, isAdmin, adminController.createSubtest);
 router.post('/questions', authMiddleware, isAdmin, adminController.addQuestion);
