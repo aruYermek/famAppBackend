@@ -23,6 +23,16 @@ app.use((req, res, next) => {
   next();
 });
 
+const rateLimit = require('express-rate-limit');
+
+const limiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 5, 
+  message: "Too many requests, please try again later."
+});
+
+app.use('/api/ai/chat', limiter); 
+
 
 app.use('/auth', require('./routes/authRoutes')); 
 app.use('/api', require('./routes/userRoutes')); 
@@ -36,6 +46,7 @@ app.use('/api/admin', require('./routes/adminRoutes'));
 app.post('/auth/google/validate', validateGoogleToken);
 app.use('/api/stages', require('./routes/stageRoutes'));
 app.use('/api/external', require('./routes/externalRoutes'));
+app.use('/api/ai',  require('./routes/aiRoutes'));
 
 
 const startServer = async () => {

@@ -59,3 +59,30 @@ exports.logout = (req, res) => {
   console.log('profileController - logout - User ID:', req.user._id);
   res.json({ message: 'Logged out successfully' });
 };
+
+// Удаление аккаунта пользователя
+exports.deleteUserAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    console.log('profileController - deleteUserAccount - User ID:', userId);
+
+    // Удаляем все данные пользователя
+    await UserProgress.deleteMany({ userId });  
+    await Insight.deleteMany({ userId });       
+
+    // Удаляем самого пользователя
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      console.log('profileController - deleteUserAccount - User not found:', userId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('profileController - deleteUserAccount - User deleted:', userId);
+    res.json({ message: 'Account deleted successfully' });
+
+  } catch (err) {
+    console.error('profileController - deleteUserAccount - Error:', err.message);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
